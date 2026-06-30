@@ -107,6 +107,16 @@ export interface Config {
    * `DEFAULT_GROUP_MD_TTL_MS` (5 min). Only meaningful when `serverMd` is true.
    */
   serverMdTtlMs?: number;
+  /**
+   * P2-C feature flag: when true, the agent gets an in-process MCP tool
+   * (`mcp__group_md__update_group_md`) that writes GROUP.md back to the server
+   * (PUT /v1/bot/groups/{groupNo}/md). Off (default) → no write-back tool is
+   * registered, so GROUP.md is read-only from the gateway's side — flip it off
+   * to roll back. Invocation is owner-gated regardless; this flag is the
+   * coarse on/off switch. Independent of `serverMd` (which only governs the
+   * server-first READ path), so an operator can enable reads without writes.
+   */
+  mdWriteback?: boolean;
   sdk: {
     model?: string;
     /**
@@ -279,6 +289,7 @@ type PartialConfig = {
   groupConfigDir?: string;
   serverMd?: boolean;
   serverMdTtlMs?: number;
+  mdWriteback?: boolean;
   sdk?: Partial<Config['sdk']>;
   rateLimit?: Partial<Config['rateLimit']>;
   context?: Partial<Config['context']>;
@@ -372,6 +383,7 @@ function mergeConfig(base: Config, override: PartialConfig): Config {
     groupConfigDir: override.groupConfigDir ?? base.groupConfigDir,
     serverMd: override.serverMd ?? base.serverMd,
     serverMdTtlMs: override.serverMdTtlMs ?? base.serverMdTtlMs,
+    mdWriteback: override.mdWriteback ?? base.mdWriteback,
     sdk: {
       ...base.sdk,
       ...(override.sdk ?? {}),
@@ -606,6 +618,7 @@ export function resolveBotConfigs(config: Config): Config[] {
       groupConfigDir: perBotFile.groupConfigDir ?? config.groupConfigDir,
       serverMd: perBotFile.serverMd ?? config.serverMd,
       serverMdTtlMs: perBotFile.serverMdTtlMs ?? config.serverMdTtlMs,
+      mdWriteback: perBotFile.mdWriteback ?? config.mdWriteback,
       sdk: {
         ...config.sdk,
         ...(perBotFile.sdk ?? {}),
